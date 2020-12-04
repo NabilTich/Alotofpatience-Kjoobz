@@ -10,94 +10,119 @@ public class Cube : MonoBehaviour
     [NonSerialized] public CubeLogic cubeLogic;
     ColorTable colorTable;
     [Header("Cube Rotation")]
-    [SerializeField] [Tooltip("Dit gebruik je om te bepalen hoe makkelijk de kubus ronddraait")] float sensitivity = 0.5f;
+    [SerializeField] [Tooltip("Dit gebruik je om te bepalen hoe makkelijk de kubus ronddraait")] float sensitivity = 0.3f;
     [Header("Cube Variables")]
     [SerializeField] int cubewidth = 3;
     //[SerializeField] float emptynessRadius = 0.1f;
     [SerializeField] [Tooltip("Hoe ver de tiles van elkaar af staan")] float tiledistance = 1f;
     [SerializeField] [Tooltip("Als dit aan staat draait de kubus in een frame")] bool instantMoves = false;
-    [SerializeField] bool toggleBlocks = false;
-    [SerializeField] bool rotationCover = true;
-    [SerializeField] [Tooltip("Als Instant Moves uit staat bepaalt dit hoe snel de kubus draait")] float rotationSpeed = 1f;
+    [SerializeField] [Tooltip("Als Instant Moves uit staat bepaalt dit hoe snel de kubus draait")] float rotationSpeed = 10f;
     [Header("Tile Variables")]
     [SerializeField] [Tooltip("Stop hier een quad in met een Tile.cs script, staat gewoon in assets als het goed is")] GameObject tile;
     [SerializeField] float tileSize = 0.85f;
     [Header("InstantMoves Afterimage")]
-    [SerializeField] [Tooltip("Stop hier een blokje met grootte 1x1x1 in met een transparant materiaal, staat als het goed is ook in je assets")] GameObject afterImage;
-    [SerializeField] float afterimageSize = 0.999f;
-    [Header("Block Variables")]
-    [SerializeField] GameObject cubeblock;
+    [SerializeField] bool afterImage = false;
+    [SerializeField] [Tooltip("Stop hier een blokje met grootte 1x1x1 in met een transparant materiaal, staat als het goed is ook in je assets")] GameObject afterImageObject;
+    [SerializeField] float afterimageSize = 0.9f;
+    [Header("Cover")]
+    [SerializeField] bool rotationCover = false;
+    [SerializeField] [Tooltip("Stop hier een Tile zonder een tile.cs in met een mooi kleurtje, staat in je assets")]GameObject coverTile;
+    [SerializeField] float coverTileSize = 1f;
+    [Header("Blocks")]
+    [SerializeField] bool blocks = true;
+    [SerializeField] [Tooltip("Stop hier een afgeronde 1x1x1 kubus in om de rubiks cube op een echte kubus te laten lijken")] GameObject cubeblock;
     [SerializeField] float blockSize = 0.499f;
     // internal variables
-    private Quaternion[] tilerotations;
-    private Vector3[] rowsteps;
-    private Vector3[] collumnsteps;
-    private Vector3[] startingpoints;
-    private GameObject rotator;
-    private GameObject cubeHolder;
+    Quaternion[] tilerotations;
+    Vector3[] rowsteps;
+    Vector3[] collumnsteps;
+    Vector3[] startingpoints;
+    GameObject rotator;
+    GameObject cubeHolder;
     public Queue<Rotation> moves;
-    private Tile[,] allTiles;
-    private float T, t;
-    //administration
+    Tile[,] allTiles;
+    Transform[] coverTiles;
+    MeshRenderer[] coverTiles_ms;
     MeshRenderer afterImage_ms;
+    GameObject[,,] blockarray;
     Vector3 vecDelta = Vector3.zero;
     Vector3 vecPrevPos = Vector3.zero;
-    private bool makemove = true;
-    private bool methodlocked = true;
-    private Tile prevHitTile;
+    float T, t;
+    //administration
+    bool makemove = true;
+    bool methodlocked = true;
+    Tile prevHitTile;
     void Start()
     {
         if(cubewidth <= 0) { cubewidth = 1; }
+        // variabelen
+        moves = new Queue<Rotation>();
+        T = (cubewidth * tiledistance) / 2;
+        t = T - tiledistance / 2;
+        Quaternion front =  Quaternion.Euler(new Vector3(0f, 180f, 0f));
+        Quaternion back =   Quaternion.Euler(new Vector3(0f, 0f, 0f));
+        Quaternion left =   Quaternion.Euler(new Vector3(0f, 270f, 0f));
+        Quaternion right =  Quaternion.Euler(new Vector3(0f, 90f, 0f));
+        Quaternion top =    Quaternion.Euler(new Vector3(90f, 90f, 0f));
+        Quaternion bottom = Quaternion.Euler(new Vector3(270f, 90f, 0f));
+        Quaternion[] tilerotations = { front, back, left, right, top, bottom };
+        this.tilerotations = tilerotations;
+        Vector3 startposfront =  new Vector3(t, t, T);
+        Vector3 startposback =   new Vector3(t, t, -T);
+        Vector3 startposleft =   new Vector3(T, t, t);
+        Vector3 startposright =  new Vector3(-T, t, t);
+        Vector3 startpostop =    new Vector3(t, T, t);
+        Vector3 startposbottom = new Vector3(t, -T, t);
+        Vector3[] startingpoints = { startposfront, startposback, startposleft, startposright, startpostop, startposbottom };
+        this.startingpoints = startingpoints;
+
+        Vector3 firstaxisrow =   new Vector3(-tiledistance, 0f, 0f);
+        Vector3 secondaxisrow =  new Vector3(0f, -tiledistance, 0f);
+        Vector3 thirdaxisrow =   new Vector3(0f, 0f, -tiledistance);
+        Vector3[] rowsteps = { firstaxisrow, secondaxisrow, thirdaxisrow };
+        this.rowsteps = rowsteps;
+        Vector3 firstaxiscollumn =  new Vector3(0f, -tiledistance, 0f);
+        Vector3 secondaxiscollumn = new Vector3(0f, 0f, -tiledistance);
+        Vector3 thirdaxiscollumn =  new Vector3(-tiledistance, 0f, 0f);
+        Vector3[] collumnsteps = { firstaxiscollumn, secondaxiscollumn, thirdaxiscollumn };
+        this.collumnsteps = collumnsteps;
+        // unity objecten
         cubeLogic = GetComponent<CubeLogic>();
         colorTable = GetComponent<ColorTable>();
         cubeLogic.InitializeCube(this.cubewidth);
         rotator = new GameObject("rotator");
         rotator.transform.parent = transform;
-        T = (cubewidth * tiledistance) / 2;
-        t = T - tiledistance / 2;
-        if (toggleBlocks)
-        {
-            allTiles = new Tile[cubeLogic.triplemove + cubeLogic.square, cubewidth];// TODO aparte array voor blocks
-            //SpawnCubeBlocks();
-        }
-        else
-            allTiles = new Tile[cubeLogic.triplemove, cubewidth];
-        moves = new Queue<Rotation>();
+        allTiles = new Tile[cubeLogic.triplemove, cubewidth];
         cubeHolder = new GameObject("CubeHolder");
         transform.parent = cubeHolder.transform;
         Camera.main.GetComponent<CameraScript>().SetParent(transform);
-        afterImage = Instantiate(afterImage);
-        afterImage.transform.parent = transform;
-        afterImage_ms = afterImage.GetComponent<MeshRenderer>();
-
-        Quaternion front =  Quaternion.Euler(new Vector3(0f  ,180f,0f));
-        Quaternion back =   Quaternion.Euler(new Vector3(0f  ,0f  ,0f));
-        Quaternion left =   Quaternion.Euler(new Vector3(0f  ,270f,0f));
-        Quaternion right =  Quaternion.Euler(new Vector3(0f  ,90f ,0f));
-        Quaternion top =    Quaternion.Euler(new Vector3(90f ,90f ,0f));
-        Quaternion bottom = Quaternion.Euler(new Vector3(270f,90f ,0f));
-        Quaternion[] tilerotations = { front, back, left, right, top, bottom };
-        this.tilerotations = tilerotations;
-        Vector3 startposfront =  new Vector3( t, t, T);
-        Vector3 startposback =   new Vector3( t, t,-T);
-        Vector3 startposleft =   new Vector3( T, t, t);
-        Vector3 startposright =  new Vector3(-T, t, t);
-        Vector3 startpostop =    new Vector3( t, T, t);
-        Vector3 startposbottom = new Vector3( t,-T, t);
-        Vector3[] startingpoints = { startposfront, startposback, startposleft, startposright, startpostop, startposbottom };
-        this.startingpoints = startingpoints;
-
-        Vector3 firstaxisrow =  new Vector3(-tiledistance, 0f           , 0f           );
-        Vector3 secondaxisrow = new Vector3(0f           , -tiledistance, 0f           );
-        Vector3 thirdaxisrow =  new Vector3(0f           , 0f           , -tiledistance);
-        Vector3[] rowsteps = { firstaxisrow, secondaxisrow, thirdaxisrow };
-        this.rowsteps = rowsteps;
-        Vector3 firstaxiscollumn =  new Vector3(0f           , -tiledistance, 0f           );
-        Vector3 secondaxiscollumn = new Vector3(0f           , 0f           , -tiledistance);
-        Vector3 thirdaxiscollumn =  new Vector3(-tiledistance, 0f           , 0f           );
-        Vector3[] collumnsteps = { firstaxiscollumn, secondaxiscollumn, thirdaxiscollumn };
-        this.collumnsteps = collumnsteps;
-
+        if (afterImage)
+        {
+            afterImageObject = Instantiate(afterImageObject);
+            afterImageObject.transform.parent = transform;
+            afterImage_ms = afterImageObject.GetComponent<MeshRenderer>();
+        }        
+        if (rotationCover)
+        {
+            coverTiles = new Transform[4];
+            coverTiles_ms = new MeshRenderer[4];
+            for (int i = 0; i < 4; i++)
+            {
+                coverTiles[i] = Instantiate(coverTile.transform, transform);
+                coverTiles_ms[i] = coverTiles[i].GetComponent<MeshRenderer>();
+                coverTiles_ms[i].enabled = false;
+            }
+            for (int i = 0; i < 2; i++)
+            {
+                coverTiles[i].parent = rotator.transform;
+            }
+        }
+        if (blocks)
+        {
+            blockarray = new GameObject[cubewidth, cubewidth, cubewidth];
+            SpawnCubeBlocks();
+        }          
+        // kubus
         SpawnTiles();
         Graphical_UpdateEverything();
     }
@@ -109,9 +134,9 @@ public class Cube : MonoBehaviour
     {
         while (true)
         {
-            moves.Enqueue(Vector3IntToCubemove(new Vector3Int(1, 0, 0)));
-            moves.Enqueue(Vector3IntToCubemove(new Vector3Int(0, 1, 0)));
-            moves.Enqueue(Vector3IntToCubemove(new Vector3Int(0, 0, 1)));
+            moves.Enqueue(VectorToRotation(new Vector3Int(1, 0, 0)));
+            moves.Enqueue(VectorToRotation(new Vector3Int(0, 1, 0)));
+            moves.Enqueue(VectorToRotation(new Vector3Int(0, 0, 1)));
             yield return new WaitForSeconds(0.01f);
         }
     }
@@ -122,9 +147,9 @@ public class Cube : MonoBehaviour
             makemove = false;
             MakeMove(moves.Dequeue());
         }
-        else
+        else if (afterImage)
         {
-            Graphical_DisableAfterImage();
+            afterImage_ms.enabled = false;
         }
         if (Input.GetMouseButton(1))
         {
@@ -154,7 +179,7 @@ public class Cube : MonoBehaviour
             if (Physics.Raycast(ray, out hit))
             {
                 Tile hitTile = hit.transform.GetComponent<Tile>();
-                if (hitTile == null) return;
+                if (hitTile == null || prevHitTile == null) return;
                 if (!(hitTile.x == prevHitTile.x && hitTile.y == prevHitTile.y))
                 {
                     moves.Enqueue(cubeLogic.MoveBasedOnTiles(prevHitTile.x, prevHitTile.y, hitTile.x, hitTile.y));
@@ -164,6 +189,7 @@ public class Cube : MonoBehaviour
         }
         SetCubeHolder();
         vecPrevPos = Input.mousePosition;
+        
     }
 
     private void MakeMove(Rotation rotation)
@@ -179,7 +205,8 @@ public class Cube : MonoBehaviour
         {
             cubeLogic.PerformRotation(rotation);
             Graphical_updateSelection(selection);
-            Graphical_AfterImage(rotation);
+            if(afterImage)
+                Graphical_AfterImage(rotation);
             makemove = true;
         }
         else
@@ -199,7 +226,7 @@ public class Cube : MonoBehaviour
     {
         return Camera.main.ScreenPointToRay(Input.mousePosition);
     }
-    private Rotation Vector3IntToCubemove(Vector3Int entry)
+    private Rotation VectorToRotation(Vector3Int entry)
     {
         if (entry.x != 0)
             return new Rotation(cubeLogic.doublemove, Math.Abs(entry.x) - 1, Math.Sign(entry.x));
@@ -213,26 +240,66 @@ public class Cube : MonoBehaviour
         cubeHolder.transform.LookAt(Camera.main.transform);
         transform.parent = cubeHolder.transform;
     }
-    //----------------------------------------------------------------graphical Methods---------------------------------------------------------------------------------------------------
-    private void Graphical_DisableAfterImage()
-    {
-        afterImage_ms.enabled = false;
-    }
-    private void Graphical_RotationCover()
-    {
-
-    }
     private void Graphical_AfterImage(Rotation rotation)
     {
-        Vector3Int vector = cubeLogic.vectors[rotation.startpos / cubeLogic.move];
-        afterImage.transform.localPosition = vector - vector*rotation.index;
-        afterImage.transform.localScale = (Vector3Int.one * cubewidth) - vector*2;
-        afterImage.transform.localRotation = Quaternion.Euler(vector * UnityEngine.Random.Range(69, 420));
+        afterImageObject.transform.localPosition = RotationToPosition(rotation);
+        afterImageObject.transform.localScale = RotationToScale(rotation);
+        afterImageObject.transform.localRotation = RotationToRandomQuaternion(rotation);
         afterImage_ms.enabled = true;
 
     }
+    private Vector3 Side(Rotation rotation)
+    {
+        return cubeLogic.vectors[rotation.startpos / cubeLogic.move];
+    }
+    private Vector3 RotationToPosition(Rotation rotation, int extraoffset = 0)
+    {
+        return Side(rotation) * ((cubeLogic.cubewidth_ + extraoffset) / 2f - rotation.index);
+    }
+    private Vector3 RotationToScale(Rotation rotation)
+    {
+        return ((Vector3.one * cubewidth) - Side(rotation) * cubeLogic.cubewidth_)* afterimageSize;
+    }
+    private Quaternion RotationToRandomQuaternion(Rotation rotation)
+    {
+        return Quaternion.Euler(Side(rotation) * UnityEngine.Random.Range(69, 420));
+    }
+    private void SetCoverTiles(Rotation rotation, int offset = 0, int neg = 1)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            coverTiles[offset + i * 2].localPosition = RotationToPosition(rotation, neg);
+            coverTiles[offset + i * 2].localScale = Vector3.one * cubewidth;
+            coverTiles[offset + i * 2].localRotation = tilerotations[(((rotation.startpos + cubeLogic.doublemove) % cubeLogic.triplemove) / cubeLogic.move) * 2 + offset + i * neg];
+            coverTiles_ms[offset + i * 2].enabled = true;
+        }
+    }
+    private void SetBlocks(Rotation rotation, Transform parent)
+    {
+        Vector3Int vec = cubeLogic.vectors[rotation.startpos / cubeLogic.move];
+        for (int a = 0; a < cubewidth; a++)
+            for (int b = 0; b < cubewidth; b++)
+            {
+                blockarray[
+                    vec.x * rotation.index + vec.y * a + vec.z * b,
+                    vec.y * rotation.index + vec.z * a + vec.x * b,
+                    vec.z * rotation.index + vec.x * a + vec.y * b].transform.parent = parent;
+            }
+    }
+    //----------------------------------------------------------------graphical Methods---------------------------------------------------------------------------------------------------
     IEnumerator Graphical_FakeRotation_Tiles(Rotation rotation, Tile[] selection, float rot_amount = 1f, int degrees = 90, float time = 0.001f)
     {
+        //optionally add cover
+        if (rotationCover)
+        {
+            if (rotation.index != 0)
+                SetCoverTiles(rotation);
+            if (rotation.index != cubeLogic.cubewidth_)
+                SetCoverTiles(rotation, 1, -1);
+        }
+        //optionally add blocks
+        if (blocks) 
+            SetBlocks(rotation, rotator.transform);        
         // store tranform info for recovery
         Vector3[] tempposs = new Vector3[selection.Length];
         Quaternion[] temprots = new Quaternion[selection.Length];
@@ -240,7 +307,7 @@ public class Cube : MonoBehaviour
         {
             tempposs[i] = selection[i].transform.localPosition;
             temprots[i] = selection[i].transform.localRotation;
-        }
+        }      
         // set parent as rotator
         SetParentsOfArray(selection, rotator.transform);
         //rotate
@@ -253,11 +320,20 @@ public class Cube : MonoBehaviour
         // reset parents
         SetParentsOfArray(selection, transform);
         // reset transforms
-        for (int i = 0; i < selection.Length; i++)
+        if (rotationCover)
         {
-            selection[i].transform.localPosition = tempposs[i];
-            selection[i].transform.localRotation = temprots[i];
-        }
+            for (int i = 0; i < selection.Length; i++)
+            {
+                selection[i].transform.localPosition = tempposs[i];
+                selection[i].transform.localRotation = temprots[i];
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                coverTiles_ms[i].enabled = false;
+            }
+        }        
+        if (blocks)
+            SetBlocks(rotation, transform);
         Graphical_updateSelection(selection);
         makemove = true;
     }
@@ -290,29 +366,25 @@ public class Cube : MonoBehaviour
             }
         
     }
-/*    private void SpawnCubeBlocks()
+    private void SpawnCubeBlocks()
     {
+
         Vector3 corner = new Vector3(t, t, t);
         Vector3 placement;
-        for (int y = 0; y < cubewidth; y++)
-        {   
-            for (int x = 0; x < cubewidth; x++)
-            {   
+        for (int y = 0; y < cubewidth; y++)        
+            for (int x = 0; x < cubewidth; x++)            
                 for (int z = 0; z < cubewidth; z++)
                 {
                     placement = corner + new Vector3(-tiledistance * x, -tiledistance * y, -tiledistance * z);
-                    //if (Mathf.Sqrt(placement.x * placement.x + placement.y * placement.y + placement.z * placement.z) < emptynessRadius)  
-                        //continue; 
                     GameObject block = Instantiate(cubeblock);
                     block.transform.parent = transform;
                     block.transform.localPosition = placement;
                     block.transform.localScale = new Vector3(blockSize, blockSize, blockSize);
-                    int startpos = cubeLogic.triplemove + z*cubewidth;
-                    allTiles[startpos + x, y] = block; // TODO seperate block array
+                    blockarray[x, y, z] = block;
                 }
-            }
-        }
-    }*/
+            
+        
+    }
     private void SpawnTileFace(Vector3 startingpoint, Vector3 rowstep, Vector3 collumnstep, Quaternion rotation, int tileindex)
     {
         Vector3 tilesize = new Vector3(this.tileSize, this.tileSize, this.tileSize);
