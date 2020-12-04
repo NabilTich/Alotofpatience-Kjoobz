@@ -5,6 +5,8 @@ using UnityEngine;
 
 class Tile : MonoBehaviour
 {
+    public int x;
+    public int y;
     Color highLightColor;
     Color regularColor;
     MeshRenderer meshRenderer;
@@ -26,8 +28,6 @@ class Tile : MonoBehaviour
         this.x = x;
         this.y = y;
     }
-    public int x;
-    public int y;
     public void Highlight()
     {
         StartCoroutine(HighlightCor());
