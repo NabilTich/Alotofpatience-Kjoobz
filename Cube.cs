@@ -32,6 +32,9 @@ public class Cube : MonoBehaviour
     [SerializeField] bool blocks = true;
     [SerializeField] [Tooltip("Stop hier een afgeronde 1x1x1 kubus in om de rubiks cube op een echte kubus te laten lijken")] GameObject cubeblock;
     [SerializeField] float blockSize = 0.499f;
+    [Header("Miscelleneous")]
+    [SerializeField] bool highlightsEnabled = false;
+    [SerializeField] Color highlightColor;
     // internal variables
     Quaternion[] tilerotations;
     Vector3[] rowsteps;
@@ -168,7 +171,6 @@ public class Cube : MonoBehaviour
             Tile hitTile;
             if (Physics.Raycast(ray, out hit) && (hitTile = hit.transform.GetComponent<Tile>()) != null)
             {
-
                 prevHitTile = hitTile;
             }
         }
@@ -340,14 +342,16 @@ public class Cube : MonoBehaviour
     //----------------------------------------------------------------graphical update methods---------------------------------------------------------------------------------------------------
     private void Graphical_updateSelection(Tile[] selectiontiles)
     {
-        for (int i = 0; i < selectiontiles.Length; i++) 
-            selectiontiles[i].GetComponent<Renderer>().material = colorTable.ToMaterial(cubeLogic.cubestate[selectiontiles[i].x, selectiontiles[i].y]);        
+        for (int i = 0; i < selectiontiles.Length; i++)
+            selectiontiles[i].SetMaterial(colorTable.ToMaterial(cubeLogic.cubestate[selectiontiles[i].x, selectiontiles[i].y]));
+        //selectiontiles[i].GetComponent<Renderer>().material = colorTable.ToMaterial(cubeLogic.cubestate[selectiontiles[i].x, selectiontiles[i].y]);        
     }
     private void Graphical_UpdateEverything()
     {
         for (int x = 0; x < cubeLogic.triplemove; x++)
             for (int y = 0; y < cubewidth; y++)
-                allTiles[x, y].GetComponent<Renderer>().material = colorTable.ToMaterial(cubeLogic.cubestate[x, y]);
+                allTiles[x, y].SetMaterial(colorTable.ToMaterial(cubeLogic.cubestate[x, y]));
+        //allTiles[x, y].GetComponent<Renderer>().material = colorTable.ToMaterial(cubeLogic.cubestate[x, y]);
 
     }
     //----------------------------------------------------------------------------------cube generation in unity----------------------------------------------------------------------------------
@@ -396,6 +400,11 @@ public class Cube : MonoBehaviour
                 newtile.transform.localRotation = rotation;
                 newtile.transform.localScale = tilesize;
                 newtile.SetTile(tileindex * cubewidth + row, collumn);
+                if (highlightsEnabled)
+                {
+                    newtile.SetMeshRenderer(newtile.GetComponent<MeshRenderer>());
+                    newtile.SetHighlightColor(highlightColor); // paars: new Color(143f, 0f, 254f, 1f)
+                }
                 allTiles[tileindex * cubewidth + row, collumn] = newtile;
             }
 
