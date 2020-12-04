@@ -346,14 +346,19 @@ MonoBehaviour:
   sensitivity: 0.3
   cubewidth: 3
   tiledistance: 1
-  instantMoves: 1
-  toggleBlocks: 0
-  rotationSpeed: 57.87
+  instantMoves: 0
+  rotationSpeed: 10
   tile: {fileID: 8239755615229677404, guid: f70d3f68ba20ae446af2f3cd23289625, type: 3}
   tileSize: 0.85
-  afterImage: {fileID: 7607216412157609113, guid: f93824dcd49921b46bdecba27ea97322,
+  afterImage: 0
+  afterImageObject: {fileID: 7607216412157609113, guid: f93824dcd49921b46bdecba27ea97322,
     type: 3}
-  afterimageSize: 0.999
+  afterimageSize: 0.9
+  rotationCover: 0
+  coverTile: {fileID: 5356467437287441245, guid: cba34068ac78f124ea6db91824bf0d76,
+    type: 3}
+  coverTileSize: 1
+  blocks: 1
   cubeblock: {fileID: 919132149155446097, guid: 429a87cf187b02049bcaec116d697c8e,
     type: 3}
   blockSize: 0.499
