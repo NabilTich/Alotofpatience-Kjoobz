@@ -22,9 +22,9 @@
         return new StripArgs(x + length + xstep * (length-1), y + ystep*(length -1), xstep *-1, ystep*-1, length);
     }
 }
-public struct CubeMove
+public struct Rotation
 {
-    public CubeMove(int startpos, int index, int sign)
+    public Rotation(int startpos, int index, int sign)
     {
         this.startpos = startpos;
         this.index = index;
@@ -34,27 +34,3 @@ public struct CubeMove
     public int index;
     public int startpos;
 }
-/*public struct TileFaceArgs
-{
-    public TileFaceArgs(UnityEngine.Vector3 startingpoint, UnityEngine.Vector3 rowstep, UnityEngine.Vector3 collumnstep, UnityEngine.Vector3 quaternionEuler)
-    {
-        this.startingpoint = startingpoint;
-        this.rowstep = rowstep;
-        this.collumnstep = collumnstep;
-        this.quaternionEuler = quaternionEuler;
-    }
-    private UnityEngine.Vector3 offset1;
-    private UnityEngine.Vector3 offset2;
-    public UnityEngine.Vector3 startingpoint;
-    public UnityEngine.Vector3 rowstep;
-    public UnityEngine.Vector3 collumnstep;
-    public UnityEngine.Vector3 quaternionEuler;
-    public TileFaceArgs Mirror()
-    {
-
-    }
-    public TileFaceArgs Translate()
-    {
-
-    }
-}*/

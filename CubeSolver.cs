@@ -19,9 +19,9 @@ public class CubeSolver : MonoBehaviour// kan uiteindelijk verwijderd worden
             if (Random.Range(0, 2) == 1) { layer *= -1; }
             switch (Random.Range(0, 2))
             {
-                case 0: cube.moves.Enqueue(cube.cubeLogic.Vector3IntToCubemove(new Vector3Int(layer, 0, 0))); ; break;
-                case 1: cube.moves.Enqueue(cube.cubeLogic.Vector3IntToCubemove(new Vector3Int(0, layer, 0))); ; break;
-                case 2: cube.moves.Enqueue(cube.cubeLogic.Vector3IntToCubemove(new Vector3Int(0, 0, layer))); ; break;
+                case 0: cube.moves.Enqueue(cube.cubeLogic.VectorToRotation(new Vector3Int(layer, 0, 0))); ; break;
+                case 1: cube.moves.Enqueue(cube.cubeLogic.VectorToRotation(new Vector3Int(0, layer, 0))); ; break;
+                case 2: cube.moves.Enqueue(cube.cubeLogic.VectorToRotation(new Vector3Int(0, 0, layer))); ; break;
             }
 
         }
@@ -29,7 +29,7 @@ public class CubeSolver : MonoBehaviour// kan uiteindelijk verwijderd worden
 
     public IEnumerator doMove(Vector3Int v)
     {
-        cube.moves.Enqueue(cube.cubeLogic.Vector3IntToCubemove(v));
+        cube.moves.Enqueue(cube.cubeLogic.VectorToRotation(v));
         while (cube.moves.Count > 0)
         {
             yield return new WaitForSeconds(0.1f); // wait for 1 second.
@@ -100,7 +100,6 @@ public class CubeSolver : MonoBehaviour// kan uiteindelijk verwijderd worden
 
     public IEnumerator Solve()
     {
-        //https://ruwix.com/twisty-puzzles/2x2x2-rubiks-cube-pocket/
         //Wacht tot scramble klaar is
         while (cube.moves.Count > 0)
         {

@@ -349,11 +349,11 @@ MonoBehaviour:
   instantMoves: 1
   toggleBlocks: 0
   rotationSpeed: 57.87
-  tile: {fileID: 4012046768741361735, guid: f70d3f68ba20ae446af2f3cd23289625, type: 3}
+  tile: {fileID: 8239755615229677404, guid: f70d3f68ba20ae446af2f3cd23289625, type: 3}
   tileSize: 0.85
   afterImage: {fileID: 7607216412157609113, guid: f93824dcd49921b46bdecba27ea97322,
     type: 3}
-  afterimageSize: 1
+  afterimageSize: 0.999
   cubeblock: {fileID: 919132149155446097, guid: 429a87cf187b02049bcaec116d697c8e,
     type: 3}
   blockSize: 0.499
@@ -584,6 +584,7 @@ GameObject:
   - component: {fileID: 1243960306}
   - component: {fileID: 1243960308}
   - component: {fileID: 1243960305}
+  - component: {fileID: 1243960309}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -668,6 +669,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e6d0916a27ce1c34b9dfeef3afa37893, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1243960309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1243960304}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4dec4fe04d6287e4c8bc2ddb784839e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotateSpeed: 1
 --- !u!1 &1275607744
 GameObject:
   m_ObjectHideFlags: 0
